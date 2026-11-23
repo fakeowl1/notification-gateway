@@ -1,0 +1,64 @@
+---
+status: "proposed"
+date: 2026-11-22
+decision-makers: Roman
+---
+
+# Prevent duplicate notifications with a client-supplied Idempotency-Key and accept at-least-once delivery
+
+## Context and Problem Statement
+
+If a client loses the `202` response (timeout, network drop) it retries `POST /api/v1/notifications`, which would create a second notification and send the message twice. Workers can also be retried after a crash. Affected modules: `api` (idempotency check), `core` (lifecycle), `queue` (leasing).
+
+## Decision Drivers
+
+- Safe client retries without duplicate deliveries (AC-2)
+- Detect misuse: same key with a different payload
+- Correct behavior under concurrent requests with the same key
+- Honest delivery guarantees, since providers do not offer transactional dedup
+
+## Considered Options
+
+- `Idempotency-Key` header + unique index + `payload_hash`; at-least-once delivery
+- Server-generated ID only (no client key)
+- Client-chosen resource ID (`PUT /notifications/{id}`)
+
+## Decision Outcome
+
+Chosen option: "`Idempotency-Key` header + unique index + `payload_hash`", because the dedup identifier must exist before the server responds, and the header keeps it separate from business data and follows common API practice.
+
+Behavior: the key is stored in `NOTIFICATION.idempotency_key` under a unique index. Same key and same `payload_hash` returns `202` with the existing ID; same key and different hash returns `409`. Concurrent requests with one key are resolved by the unique index (the loser re-reads the existing row). `provider_message_id` is stored after provider acceptance so a delivery already `SENT` is never dispatched again.
+
+Delivery is **at-least-once**: if a worker crashes after the provider accepted the message but before `SENT` is saved, lease expiry will retry and the recipient may get a duplicate.
+
+### Consequences
+
+- **Good, because** client retries are safe and the contract is explicit (`202` / `409`).
+- **Good, because** the unique index guarantees correctness without application-level locks.
+- **Neutral, because** keys must be stored, so a retention period (TTL) should be defined later.
+- **Bad, because** the key is unique globally, not per client, so two clients using the same key would conflict; clients must use UUIDs.
+- **Bad, because** exactly-once delivery is not achieved; a rare duplicate after a worker crash is possible.
+
+### Confirmation
+
+- Integration test: same key and payload twice, then one notification and no extra deliveries.
+- Integration test: same key and different payload, then `409`.
+- Integration test: parallel requests with one key, then a single notification.
+- Known limitation documented here and checked during audit.
+
+## Pros and Cons of the Options
+
+### Idempotency-Key header + unique index + payload_hash
+
+- **Good, because** solves the lost-response problem; standard practice.
+- **Bad, because** requires clients to generate keys; needs `payload_hash` and key storage.
+
+### Server-generated ID only
+
+- **Good, because** simplest API.
+- **Bad, because** the client cannot know the ID after a lost response, so retries create duplicates.
+
+### Client-chosen resource ID (PUT)
+
+- **Good, because** idempotent by HTTP semantics.
+- **Bad, because** the client controls primary keys and the API deviates from the `POST` + `202` contract.
