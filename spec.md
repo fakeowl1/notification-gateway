@@ -2,6 +2,7 @@
 
 **Date:** 2026-11-21 | **Status:** Draft  
 **ADRs:** [ADR-001](../docs/adr/001-async-queue-bullmq.md), [ADR-002](../docs/adr/002-duplicate-deliveries.md), [ADR-003](../docs/adr/003-channel-adapter-ports.md)
+
 ## 1. What & Why
 
 **What:** Asynchronous microservice that accepts notification requests and delivers them via Email, Telegram, and Discord with per-channel tracking and retries.  
@@ -34,22 +35,22 @@
 
 ## 4. Architecture
 
-| Module | Responsibility | Allowed deps | Why this boundary |
-|--------|----------------|--------------|-------------------|
-| `api` | HTTP handlers, auth, validation, idempotency | `core`, `shared` | Isolates transport from domain logic |
-| `core` | Lifecycle, routing, retry policy, ports | `shared` | Business rules independent of I/O |
-| `queue` | BullMQ + Valkey job enqueueing, lock management, backoff retries | `core`, `shared` | Decouples delivery from API traffic |
-| `adapters` | Email, Telegram, Discord clients | `core` (ports), `shared` | Swap SDKs without touching `core` |
-| `shared` | Config, logger, errors, clock | none | Prevents circular imports |
+| Module     | Responsibility                                                   | Allowed deps             | Why this boundary                    |
+| ---------- | ---------------------------------------------------------------- | ------------------------ | ------------------------------------ |
+| `api`      | HTTP handlers, auth, validation, idempotency                     | `core`, `shared`         | Isolates transport from domain logic |
+| `core`     | Lifecycle, routing, retry policy, ports                          | `shared`                 | Business rules independent of I/O    |
+| `queue`    | BullMQ + Valkey job enqueueing, lock management, backoff retries | `core`, `shared`         | Decouples delivery from API traffic  |
+| `adapters` | Email, Telegram, Discord clients                                 | `core` (ports), `shared` | Swap SDKs without touching `core`    |
+| `shared`   | Config, logger, errors, clock                                    | none                     | Prevents circular imports            |
 
 **Interaction:** `api` validates and delegates to `core`, which persists state and enqueues jobs via `queue`; workers pull jobs and call `adapters` through ports defined in `core`.
 **Forbidden:** `api` -> `adapters`; `adapters` -> other adapters or `queue`; `core` -> external SDKs; only `queue` imports `bullmq` or Valkey client. **Enforced by:** `make check-deps` (CI).
 
-| Endpoint | Purpose | Key codes |
-|----------|---------|-----------|
-| `POST /api/v1/notifications` | Submit multi-channel notification | `202`, `400`, `401`, `409`, `503` |
-| `GET /api/v1/notifications/{id}` | Notification + per-channel status | `200`, `401`, `404`, `503` |
-| `GET /health` | Liveness/readiness | `200`, `503` |
+| Endpoint                         | Purpose                           | Key codes                         |
+| -------------------------------- | --------------------------------- | --------------------------------- |
+| `POST /api/v1/notifications`     | Submit multi-channel notification | `202`, `400`, `401`, `409`, `503` |
+| `GET /api/v1/notifications/{id}` | Notification + per-channel status | `200`, `401`, `404`, `503`        |
+| `GET /health`                    | Liveness/readiness                | `200`, `503`                      |
 
 **Request payload** (header `Idempotency-Key: <client-generated UUID>`)
 
@@ -104,11 +105,11 @@ Forbidden: `SENT -> RETRYING`, `DEAD -> SENT`.
 
 ## 7. Risks & Decisions
 
-| Risk | Impact | Mitigation | ADR |
-|------|--------|------------|-----|
-| Channel rate limits (`429`) delay urgent alerts | High | BullMQ worker concurrency limits and delayed backoff retries | [ADR-001](../docs/adr/001-async-queue-bullmq.md) |
-| Duplicate deliveries on network retries | Med | Enforce `idempotency_key` uniqueness, `provider_message_id` | [ADR-002](../docs/adr/002-duplicate-deliveries.md) |
-| Provider payload/formatting drift in Telegram/Discord | Med | Isolate formatting and error mapping inside channel adapters | [ADR-003](../docs/adr/003-channel-adapter-ports.md) |
+| Risk                                                  | Impact | Mitigation                                                   | ADR                                                 |
+| ----------------------------------------------------- | ------ | ------------------------------------------------------------ | --------------------------------------------------- |
+| Channel rate limits (`429`) delay urgent alerts       | High   | BullMQ worker concurrency limits and delayed backoff retries | [ADR-001](../docs/adr/001-async-queue-bullmq.md)    |
+| Duplicate deliveries on network retries               | Med    | Enforce `idempotency_key` uniqueness, `provider_message_id`  | [ADR-002](../docs/adr/002-duplicate-deliveries.md)  |
+| Provider payload/formatting drift in Telegram/Discord | Med    | Isolate formatting and error mapping inside channel adapters | [ADR-003](../docs/adr/003-channel-adapter-ports.md) |
 
 ## 8. Audit
 
