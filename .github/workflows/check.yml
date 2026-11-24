@@ -2,7 +2,7 @@ name: Check
 
 on:
   push:
-  commit:
+  pull_request:
 
 jobs:
   check:
