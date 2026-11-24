@@ -26,8 +26,12 @@
     "lint": "oxlint",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
+    "check-deps": "node scripts/check-deps.mjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
     "prepare": "husky"
+  },
+  "dependencies": {
+    "fastify": "^5.12.8"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
@@ -36,8 +40,5 @@
     "oxlint": "^1.95.0",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"
-  },
-  "dependencies": {
-    "fastify": "^5.12.8"
   }
 }

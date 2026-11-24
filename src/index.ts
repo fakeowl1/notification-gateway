@@ -1,5 +1,8 @@
-const world = "world";
+import { buildApp } from "./app.js";
 
-export function hello(who: string = world): string {
-  return `Hello ${who}!`;
-}
+const app = buildApp();
+
+await app.listen({
+  port: Number(process.env.PORT ?? 3000),
+  host: "0.0.0.0",
+});
