@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "lint": "oxlint",
     "typecheck": "tsc",
-    "check": "npm run typecheck && npm run test"
+    "check": "npm run typecheck && npm run test",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -27,6 +28,7 @@
   "homepage": "https://github.com/fakeowl1/notification-gateway#readme",
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "husky": "^9.1.7",
     "oxlint": "^1.95.0",
     "prettier": "^3.10.1",
     "typescript": "^7.0.2",
