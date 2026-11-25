@@ -115,7 +115,3 @@ Forbidden: `SENT -> RETRYING`, `DEAD -> SENT`.
 | Channel rate limits (`429`) delay urgent alerts       | High   | BullMQ worker concurrency limits and delayed backoff retries                  | [ADR-001](../docs/adr/001-async-queue-bullmq.md)    |
 | Duplicate deliveries on network retries               | Med    | `idempotency_key` uniqueness, `provider_message_id`, at-least-once documented | [ADR-002](../docs/adr/002-duplicate-deliveries.md)  |
 | Provider payload/formatting drift in Telegram/Discord | Med    | Isolate formatting and error mapping inside channel adapters                  | [ADR-003](../docs/adr/003-channel-adapter-ports.md) |
-
-## 8. Audit
-
-Results: [`audit.md`](../audit.md). Every divergence is fixed by changing this spec, an AC, or a standard, not by a manual patch.
