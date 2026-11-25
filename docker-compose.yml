@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: notification_gateway
+      POSTGRES_USER: notification_gateway
+      POSTGRES_PASSWORD: notification_gateway
+    ports:
+      - "5432:5432"
+
+  valkey:
+    image: valkey/valkey:8
+    ports:
+      - "6379:6379"

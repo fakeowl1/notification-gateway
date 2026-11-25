@@ -1,0 +1,44 @@
+{
+  "name": "notification-gateway",
+  "version": "1.0.0",
+  "description": "A microservice for multi-channel notifications (Email, Telegram, Discord).",
+  "keywords": [],
+  "homepage": "https://github.com/fakeowl1/notification-gateway#readme",
+  "bugs": {
+    "url": "https://github.com/fakeowl1/notification-gateway/issues"
+  },
+  "license": "ISC",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fakeowl1/notification-gateway.git"
+  },
+  "directories": {
+    "doc": "docs"
+  },
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "test:watch": "vitest",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "check-deps": "node scripts/check-deps.mjs",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "fastify": "^5.12.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "husky": "^9.1.7",
+    "oxfmt": "^0.80.0",
+    "oxlint": "^1.95.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}
